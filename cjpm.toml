@@ -1,0 +1,14 @@
+[dependencies]
+
+[package]
+  cjc-version = "0.57.3"
+  compile-option = ""
+  description = "仓颉(Cangjie)的Mustache模板引擎"
+  link-option = ""
+  name = "mustache"
+  output-type = "static"
+  override-compile-option = ""
+  src-dir = ""
+  target-dir = ""
+  version = "1.0.0"
+  package-configuration = {}
