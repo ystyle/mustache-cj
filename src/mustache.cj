@@ -1,11 +1,131 @@
 package mustache
 
 import std.collection.{ArrayList, HashMap}
-import serialization.serialization.Serializable
-import std.io.{InputStream, StringReader}
+import serialization.serialization.*
+import std.io.{InputStream, StringReader, OutputStream, ByteBuffer, StringWriter}
+import encoding.json.*
 
-public interface Node {
-    func render(t: Template, w: Writer, c: Serializable<Any>): Unit
+interface Node <: ToString {
+    func render(t: Template, w: Writer, c: Array<DataModel>): Unit
+}
+
+public class MustacheException <: Exception {
+    init(message: String) {
+        super(message)
+    }
+}
+
+class TextNode <: Node {
+    TextNode(let text: String) {
+    }
+    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+        for (r in this.text.toRuneArray()) {
+            if (r.isAsciiWhiteSpace()) {
+                w.text()
+            }
+            w.write(r)
+        }
+    }
+    public func toString(): String {
+        return "[text: ${text}]"
+    }
+}
+
+class VarNode <: Node & ToString {
+    VarNode(let name: String, let escape: Bool) {}
+    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+        w.text()
+        let v = lookup(this.name, c)
+        if (let Some(dm) <- v) {
+            let text = dmToString(dm)
+            if (this.escape) {
+                w.write(escapeFn(text).toArray())
+            } else {
+                w.write(text.toArray())
+            }
+            return
+        }
+        throw MustacheException("failed to lookup ${name}")
+    }
+    public func toString(): String {
+        return "[var: ${this.name} escaped: ${this.escape}]"
+    }
+}
+
+class SectionNode <: Node & ToString {
+    SectionNode(let name: String, let inverted: Bool, let elems: ArrayList<Node>) {
+    }
+    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+        w.tag()
+        let elemFn = { v: Array<DataModel> => 
+            let l = ArrayList<DataModel>()
+            l.appendAll(v)
+            l.appendAll(c)
+            let ctx = l.toArray()
+            for (elem in elems) {
+                elem.render(t, w, ctx)
+            }
+        }
+        let v = lookup(this.name, c)
+        if (let Some(dm) <- v) {
+            if (this.inverted) {
+                match (dm) {
+                    case vv: DataModelSeq =>
+                        if (vv.getItems().size > 0) {
+                            for (item in vv.getItems()) {
+                                elemFn(item)
+                            }
+                        } else {
+                            elemFn(dm)
+                        }
+                    case _ => elemFn(dm)
+                }
+                w.tag()
+                return
+            }
+        }
+        w.tag()
+        throw MustacheException("failed to lookup ${name}")
+    }
+    public func toString(): String {
+        return "[section: ${name} inv: ${inverted} elems: ${elems}]"
+    }
+}
+
+class CommentNode <: Node & ToString {
+    CommentNode(let text: String) {
+    }
+    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+        w.tag()
+    }
+    public func toString(): String {
+        return "[comment: ${text}]"
+    }
+}
+
+class PartialNode <: Node & ToString {
+    PartialNode(let name: String) {
+    }
+    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+        w.tag()
+        if (let Some(template) <- t.partials.get(this.name)) {
+            template.partials = t.partials
+            template.render(w, c)
+        }
+    }
+    public func toString(): String {
+        return "[partial: ${name}]"
+    }
+}
+
+class DelimNode <: Node & ToString {
+    DelimNode() {}
+    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+        w.tag()
+    }
+    public func toString(): String {
+        return "[delim]"
+    }
 }
 
 public type OptionFn = (Template) -> Unit
@@ -22,26 +142,24 @@ public let partial: (Template) -> OptionFn = {
         t => t.partials[p.name] = p
     }
 }
-
 public let enableErrors: () -> OptionFn = {
-    => return { t => 
-      t.silentMiss = false
+    => return {
+        t => t.silentMiss = false
     }
 }
-
 public let silentMiss: () -> OptionFn = {
-    => return { t => 
-      t.silentMiss = true
+    => return {
+        t => t.silentMiss = true
     }
 }
 
 public class Template {
     let name: String
     let elems = ArrayList<Node>()
-    let partials = HashMap<String, Template>()
+    var partials = HashMap<String, Template>()
     var startDelim = "{{"
     var endDelim = "}}"
-    var silentMiss = false
+    var silentMiss = true
     public init(name: String, options: Array<OptionFn>) {
         super()
         this.name = name
@@ -50,13 +168,90 @@ public class Template {
         }
     }
 
-    public func parse(input:InputStream) {
+    public func parse(input: InputStream):Unit {
         let sr = StringReader(input)
         let content = sr.readToEnd()
         this.parse(content)
     }
 
-    public func parse(content:String) {
-        
+    public func parse(content: String):Unit {
+        let lex = Lexer(content, this.startDelim, this.endDelim)
+        let parser = Parser(lex)
+        let elems = parser.parse()
+        this.elems.clear()
+        this.elems.appendAll(elems)
     }
+
+     public func parse(bs:Array<Byte>):Unit {
+        this.parse(String.fromUtf8(bs))
+    }
+
+    func render(w: Writer, context: Array<DataModel>): Unit  {
+        for (elem in this.elems) {
+            try {
+                elem.render(this, w, context)
+            } catch (e:Exception) {
+                if (!this.silentMiss) {
+                    throw e
+                } else {
+                    e.printStackTrace()
+                }
+            }
+        }
+        w.flush()
+    }
+
+    func render<T>(w: OutputStream, context: Array<T>): Unit where T <: Serializable<T> & ToString {
+        this.render(Writer(w), toDataModel(context))
+    }
+
+    public func render<T>(context: Array<T>): String where T <: Serializable<T> & ToString {
+        var buf = ByteBuffer()
+        let w = Writer(buf)
+        this.render(w, toDataModel(context))
+        return String.fromUtf8(buf.bytes())
+    }
+    public func renderBytes<T>(context: Array<T>): Array<Byte> where T <: Serializable<T> & ToString {
+        var buf = ByteBuffer()
+        let w = Writer(buf)
+        this.render(w, toDataModel(context))
+        return buf.bytes()
+    }
+}
+
+func dmToString(data: DataModel): String {
+    match (data) {
+        case v: ToString => v.toString()
+        case v: DataModelString => v.getValue()
+        case v: DataModelInt => "${v.getValue()}"
+        case v: DataModelFloat => "${v.getValue()}"
+        case v: DataModelNull => ""
+        case _ => data.toJson().toJsonString()
+    }
+}
+
+func escapeFn(s: String): String {
+    if (s.indexOf(#"'"&<>"#).isSome()) {
+        return s
+    }
+    var b = StringBuilder()
+    for (r in s.toRuneArray()) {
+        match (r) {
+            case r'"' => b.append("&quot;")
+            case r'\'' => b.append("&apos;")
+            case r'&' => b.append("&amp;")
+            case r'<' => b.append("&lt;")
+            case r'>' => b.append("&gt;")
+            case _ => b.append(r)
+        }
+    }
+    return b.toString()
+}
+
+func toDataModel<T>(context: Array<T>): Array<DataModel> where T <: Serializable<T> & ToString {
+    let list = ArrayList<DataModel>(context.size)
+    for (ctx in context) {
+        list.append(ctx.serialize())
+    }
+    return list.toArray()
 }
