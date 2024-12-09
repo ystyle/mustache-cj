@@ -4,9 +4,10 @@ import std.collection.{ArrayList, HashMap}
 import serialization.serialization.*
 import std.io.{InputStream, StringReader, OutputStream, ByteBuffer, StringWriter}
 import encoding.json.*
+import std.reflect.*
 
 interface Node <: ToString {
-    func render(t: Template, w: Writer, c: Array<DataModel>): Unit
+    func render(t: Template, w: Writer, c: Array<Any>): Unit
 }
 
 public class MustacheException <: Exception {
@@ -18,7 +19,7 @@ public class MustacheException <: Exception {
 class TextNode <: Node {
     TextNode(let text: String) {
     }
-    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+    public func render(_: Template, w: Writer, _: Array<Any>): Unit {
         for (r in this.text.toRuneArray()) {
             if (r.isAsciiWhiteSpace()) {
                 w.text()
@@ -33,19 +34,15 @@ class TextNode <: Node {
 
 class VarNode <: Node & ToString {
     VarNode(let name: String, let escape: Bool) {}
-    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+    public func render(_: Template, w: Writer, c: Array<Any>): Unit {
         w.text()
-        let v = lookup(this.name, c)
-        if (let Some(dm) <- v) {
-            let text = dmToString(dm)
-            if (this.escape) {
-                w.write(escapeFn(text).toArray())
-            } else {
-                w.write(text.toArray())
-            }
-            return
+        let v = lookup_v2(this.name, c)
+        let text = anyToString(v)
+        if (this.escape) {
+            w.write(escapeFn(text).toArray())
+        } else {
+            w.write(text.toArray())
         }
-        throw MustacheException("failed to lookup ${name}")
     }
     public func toString(): String {
         return "[var: ${this.name} escaped: ${this.escape}]"
@@ -55,10 +52,10 @@ class VarNode <: Node & ToString {
 class SectionNode <: Node & ToString {
     SectionNode(let name: String, let inverted: Bool, let elems: ArrayList<Node>) {
     }
-    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+    public func render(t: Template, w: Writer, c: Array<Any>): Unit {
         w.tag()
-        let elemFn = { v: Array<DataModel> => 
-            let l = ArrayList<DataModel>()
+        let elemFn = { v: Array<Any> => 
+            let l = ArrayList<Any>()
             l.appendAll(v)
             l.appendAll(c)
             let ctx = l.toArray()
@@ -66,24 +63,25 @@ class SectionNode <: Node & ToString {
                 elem.render(t, w, ctx)
             }
         }
-        let v = lookup(this.name, c)
-        if (let Some(dm) <- v) {
-            if (this.inverted) {
-                match (dm) {
-                    case vv: DataModelSeq =>
-                        if (vv.getItems().size > 0) {
-                            for (item in vv.getItems()) {
+        let v = lookup_v2(this.name, c)
+        if (this.inverted) {
+                for (sif in TypeInfo.of(v).superInterfaces) {
+                    println(sif.name)
+                }
+                match (v) {
+                    case vv: Collection<Any> =>
+                        if (vv.size > 0) {
+                            for (item in vv) {
                                 elemFn(item)
                             }
                         } else {
-                            elemFn(dm)
+                            elemFn(v)
                         }
-                    case _ => elemFn(dm)
+                    case _ => elemFn(v)
                 }
                 w.tag()
                 return
             }
-        }
         w.tag()
         throw MustacheException("failed to lookup ${name}")
     }
@@ -95,7 +93,7 @@ class SectionNode <: Node & ToString {
 class CommentNode <: Node & ToString {
     CommentNode(let text: String) {
     }
-    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+    public func render(_: Template, w: Writer, _: Array<Any>): Unit {
         w.tag()
     }
     public func toString(): String {
@@ -106,7 +104,7 @@ class CommentNode <: Node & ToString {
 class PartialNode <: Node & ToString {
     PartialNode(let name: String) {
     }
-    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+    public func render(t: Template, w: Writer, c: Array<Any>): Unit {
         w.tag()
         if (let Some(template) <- t.partials.get(this.name)) {
             template.partials = t.partials
@@ -120,7 +118,7 @@ class PartialNode <: Node & ToString {
 
 class DelimNode <: Node & ToString {
     DelimNode() {}
-    public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
+    public func render(_: Template, w: Writer, _: Array<Any>): Unit {
         w.tag()
     }
     public func toString(): String {
@@ -186,7 +184,7 @@ public class Template {
         this.parse(String.fromUtf8(bs))
     }
 
-    func render(w: Writer, context: Array<DataModel>): Unit  {
+    func render(w: Writer, context: Any): Unit  {
         for (elem in this.elems) {
             try {
                 elem.render(this, w, context)
@@ -201,34 +199,34 @@ public class Template {
         w.flush()
     }
 
-    func render<T>(w: OutputStream, context: Array<T>): Unit where T <: Serializable<T> & ToString {
-        this.render(Writer(w), toDataModel(context))
+    func render(w: OutputStream, context: Any): Unit {
+        this.render(Writer(w), context)
     }
 
-    public func render<T>(context: Array<T>): String where T <: Serializable<T> & ToString {
+    public func render(context: Any): String {
         var buf = ByteBuffer()
         let w = Writer(buf)
-        this.render(w, toDataModel(context))
+        this.render(w, context)
         return String.fromUtf8(buf.bytes())
     }
-    public func renderBytes<T>(context: Array<T>): Array<Byte> where T <: Serializable<T> & ToString {
+    public func renderBytes(context: Any): Array<Byte> {
         var buf = ByteBuffer()
         let w = Writer(buf)
-        this.render(w, toDataModel(context))
+        this.render(w, context)
         return buf.bytes()
     }
 }
 
-func dmToString(data: DataModel): String {
-    match (data) {
-        case v: ToString => v.toString()
-        case v: DataModelString => v.getValue()
-        case v: DataModelInt => "${v.getValue()}"
-        case v: DataModelFloat => "${v.getValue()}"
-        case v: DataModelNull => ""
-        case _ => data.toJson().toJsonString()
-    }
-}
+// func dmToString(data: DataModel): String {
+//     match (data) {
+//         case v: ToString => v.toString()
+//         case v: DataModelString => v.getValue()
+//         case v: DataModelInt => "${v.getValue()}"
+//         case v: DataModelFloat => "${v.getValue()}"
+//         case v: DataModelNull => ""
+//         case _ => data.toJson().toJsonString()
+//     }
+// }
 
 func escapeFn(s: String): String {
     if (s.indexOf(#"'"&<>"#).isSome()) {

@@ -42,7 +42,6 @@ public class Writer <: OutputStream {
     }
     public func write(b:Array<Byte>):Unit {
         let runes = String.fromUtf8(b).toRuneArray()
-        var i = 0
         for (r in runes) {
             this.write(r)
         }
