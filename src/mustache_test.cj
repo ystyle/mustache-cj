@@ -36,20 +36,9 @@ class TemplateTest {
 }
 
 @Derive[ToString]
-class FalsyTemplateData <: Serializable<FalsyTemplateData> {
+class FalsyTemplateData <: MustacheSerializable {
     FalsyTemplateData(let foo:Int64, let bar:Bool){}
-     public func serialize(): DataModel {
+    public func toDataModel(): DataModel {
         return DataModelStruct().add(field<Int64>("foo", foo)).add(field<Bool>("bar", bar))
-    }
-
-    /* 实现反序列化方法 */
-    public static func deserialize(dm: DataModel): FalsyTemplateData {
-        let dms = match (dm) {
-            case data: DataModelStruct => data
-            case _ => throw Exception("this data is not DataModelStruct")
-        }
-        let foo = Int64.deserialize(dms.get("foo"))
-        let bar = Bool.deserialize(dms.get("bar"))
-        return FalsyTemplateData(foo, bar)
     }
 }

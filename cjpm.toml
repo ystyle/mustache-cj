@@ -2,7 +2,7 @@
 
 [package]
   cjc-version = "0.57.3"
-  compile-option = ""
+  compile-option = "-Woff unused"
   description = "仓颉(Cangjie)的Mustache模板引擎"
   link-option = ""
   name = "mustache"

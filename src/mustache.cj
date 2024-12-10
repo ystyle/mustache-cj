@@ -9,6 +9,11 @@ interface Node <: ToString {
     func render(t: Template, w: Writer, c: Array<DataModel>): Unit
 }
 
+public interface MustacheSerializable {
+    // func serialize(): DataModel
+    func toDataModel(): DataModel
+}
+
 public class MustacheException <: Exception {
     init(message: String) {
         super(message)
@@ -57,7 +62,8 @@ class SectionNode <: Node & ToString {
     }
     public func render(t: Template, w: Writer, c: Array<DataModel>): Unit {
         w.tag()
-        let elemFn = { v: Array<DataModel> => 
+        let elemFn = {
+            v: Array<DataModel> =>
             let l = ArrayList<DataModel>()
             l.appendAll(v)
             l.appendAll(c)
@@ -154,12 +160,15 @@ public let silentMiss: () -> OptionFn = {
 }
 
 public class Template {
-    let name: String
+    protected let name: String
     let elems = ArrayList<Node>()
-    var partials = HashMap<String, Template>()
-    var startDelim = "{{"
-    var endDelim = "}}"
-    var silentMiss = true
+    protected var partials = HashMap<String, Template>()
+    protected var startDelim = "{{"
+    protected var endDelim = "}}"
+    protected var silentMiss = true
+    public init() {
+        this.name = ""
+    }
     public init(name: String, options: Array<OptionFn>) {
         super()
         this.name = name
@@ -168,13 +177,13 @@ public class Template {
         }
     }
 
-    public func parse(input: InputStream):Unit {
+    public func parse(input: InputStream): Unit {
         let sr = StringReader(input)
         let content = sr.readToEnd()
         this.parse(content)
     }
 
-    public func parse(content: String):Unit {
+    public func parse(content: String): Unit {
         let lex = Lexer(content, this.startDelim, this.endDelim)
         let parser = Parser(lex)
         let elems = parser.parse()
@@ -182,15 +191,15 @@ public class Template {
         this.elems.appendAll(elems)
     }
 
-     public func parse(bs:Array<Byte>):Unit {
+    public func parse(bs: Array<Byte>): Unit {
         this.parse(String.fromUtf8(bs))
     }
 
-    func render(w: Writer, context: Array<DataModel>): Unit  {
+    func render(w: Writer, context: Array<DataModel>): Unit {
         for (elem in this.elems) {
             try {
                 elem.render(this, w, context)
-            } catch (e:Exception) {
+            } catch (e: Exception) {
                 if (!this.silentMiss) {
                     throw e
                 } else {
@@ -201,17 +210,17 @@ public class Template {
         w.flush()
     }
 
-    func render<T>(w: OutputStream, context: Array<T>): Unit where T <: Serializable<T> & ToString {
+    public func render<T>(w: OutputStream, context: Array<T>): Unit where T <: MustacheSerializable {
         this.render(Writer(w), toDataModel(context))
     }
 
-    public func render<T>(context: Array<T>): String where T <: Serializable<T> & ToString {
+    public func render<T>(context: Array<T>): String where T <: MustacheSerializable {
         var buf = ByteBuffer()
         let w = Writer(buf)
         this.render(w, toDataModel(context))
         return String.fromUtf8(buf.bytes())
     }
-    public func renderBytes<T>(context: Array<T>): Array<Byte> where T <: Serializable<T> & ToString {
+    public func renderBytes<T>(context: Array<T>): Array<Byte> where T <: MustacheSerializable {
         var buf = ByteBuffer()
         let w = Writer(buf)
         this.render(w, toDataModel(context))
@@ -221,11 +230,11 @@ public class Template {
 
 func dmToString(data: DataModel): String {
     match (data) {
-        case v: ToString => v.toString()
         case v: DataModelString => v.getValue()
         case v: DataModelInt => "${v.getValue()}"
         case v: DataModelFloat => "${v.getValue()}"
         case v: DataModelNull => ""
+        case v: ToString => v.toString()
         case _ => data.toJson().toJsonString()
     }
 }
@@ -248,10 +257,10 @@ func escapeFn(s: String): String {
     return b.toString()
 }
 
-func toDataModel<T>(context: Array<T>): Array<DataModel> where T <: Serializable<T> & ToString {
+func toDataModel<T>(context: Array<T>): Array<DataModel> where T <: MustacheSerializable {
     let list = ArrayList<DataModel>(context.size)
     for (ctx in context) {
-        list.append(ctx.serialize())
+        list.append(ctx.toDataModel())
     }
     return list.toArray()
 }
