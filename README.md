@@ -2,7 +2,7 @@
 基于仓颉实现的mustache模板引擎
 
 # 安装
->分支说明: master版本因为extend扩展的bug，现在还无法使用。 custome-interface版本现在是用自定义序列化接口extend的，可以正常使用。 reflect版本因为反射无法调用Collection<T>相关接口，而无法使用，仓颉可能会改反射，先留着。
+>分支说明: master版本因为extend扩展的bug，现在还无法使用。 custome-interface版本现在是用自定义序列化接口extend的，可以正常使用, 不支持模板的方法调用。 reflect版本因为反射无法调用Collection<T>相关接口，而无法使用，仓颉可能会改反射，先留着。 
 ```toml
 [dependencies]
 mustache = {git = "https://github.com/ystyle/mustache-cj", branch = "custome-interface"}
