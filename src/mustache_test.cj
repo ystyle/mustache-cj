@@ -38,7 +38,7 @@ class TemplateTest {
 @Derive[ToString]
 class FalsyTemplateData <: MustacheSerializable {
     FalsyTemplateData(let foo:Int64, let bar:Bool){}
-    public func toDataModel(): DataModel {
+    public func serialize(): DataModel {
         return DataModelStruct().add(field<Int64>("foo", foo)).add(field<Bool>("bar", bar))
     }
 }
