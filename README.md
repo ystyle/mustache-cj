@@ -13,14 +13,10 @@ mustache = {git = "https://github.com/ystyle/mustache-cj", branch = "custome-int
 自定义类型示例: 
 ```cj
 import mustache.*
-class TestLookupClass <: MustacheSerializable {
-    TestLookupClass(let integer: Int64, let string: String, let boolean: Bool, let map: HashMap<String, String>) {}
+class MyData <: MustacheSerializable {
+    MyData(let string: String) {}
     public func toDataModel(): DataModel {
-        return DataModelStruct()
-            .add(field<Int64>("integer", integer))
-            .add(field<String>("string", string))
-            .add(field<Bool>("boolean", boolean))
-            .add(field<HashMap<String, String>>("map", map))
+        return DataModelStruct().add(field<String>("string", string))
     }
 }
 ```
@@ -39,6 +35,50 @@ main(): Int64 {
     println(out)
     // some text bar here
     return 0
+}
+```
+
+使用类渲染模板:
+```cj
+import mustache.*
+import std.collection.HashMap
+import serialization.serialization.*
+
+class TestData <: MustacheSerializable {
+    TestData(let integer: Int64, let string: String, let boolean: Bool, let map: HashMap<String, String>, let list:Array<Int64>) {}
+    public func toDataModel(): DataModel {
+        return DataModelStruct()
+            .add(field<Int64>("integer", integer))
+            .add(field<String>("string", string))
+            .add(field<Bool>("boolean", boolean))
+            .add(field<HashMap<String, String>>("map", map))
+            .add(field<Array<Int64>>("list", list))
+    }
+}
+main() {
+    let t = Template("tpl_name")
+    t.parse("integer:\t{{integer}}\nstring:\t{{string}}\nboolean:\t{{boolean}}\nmap.in:\t{{map.in}}\nlist:\t{{^list}}{{.}}{{/list}}")
+    let data = TestData(123, "abc", true, HashMap<String, String>(("in", "I'm nested!")), 1,2,3)
+    let out = t.render(data)
+    println(out)
+    // integer:        123
+    // string: abc
+    // boolean:        true
+    // map.in: I&apos;m nested!
+    // list:   123
+}
+```
+
+引用模板
+```cj
+main() {
+    println("Partials:")
+    let t1 = Template("text")
+    t1.parse("from partial")
+    let t2 = Template("index", partial(t1))
+    t2.parse("{{>text}}")
+    let out = t2.render(1)
+    println(out) // from partial
 }
 ```
 
