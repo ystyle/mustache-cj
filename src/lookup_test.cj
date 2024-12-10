@@ -15,7 +15,7 @@ struct LookupTestAssertion<T> where T <: MustacheSerializable {
 
 class TestLookupClass <: MustacheSerializable {
     TestLookupClass(let integer: Int64, let string: String, let boolean: Bool, let map: HashMap<String, String>) {}
-    public func toDataModel(): DataModel {
+    public func serialize(): DataModel {
         return DataModelStruct()
             .add(field<Int64>("integer", integer))
             .add(field<String>("string", string))
@@ -56,7 +56,7 @@ class LookupTest {
                 let a = lookup(assertion.name, toDataModel(test.context))
                 let a1 = a.getOrThrow()
                 let v1 = dmToString(a1)
-                let v2 = dmToString(assertion.value.toDataModel())
+                let v2 = dmToString(assertion.value.serialize())
                 println("${i}/${j} Unexpected value ${v1} != ${v2}")
                 if (v1 != v2) {
                     @Fail("${i}/${j} Unexpected value ${v1} != ${v2}")

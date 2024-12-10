@@ -10,8 +10,7 @@ interface Node <: ToString {
 }
 
 public interface MustacheSerializable {
-    // func serialize(): DataModel
-    func toDataModel(): DataModel
+    func serialize(): DataModel
 }
 
 public class MustacheException <: Exception {
@@ -260,7 +259,7 @@ func escapeFn(s: String): String {
 func toDataModel<T>(context: Array<T>): Array<DataModel> where T <: MustacheSerializable {
     let list = ArrayList<DataModel>(context.size)
     for (ctx in context) {
-        list.append(ctx.toDataModel())
+        list.append(ctx.serialize())
     }
     return list.toArray()
 }
