@@ -129,7 +129,7 @@ class Parser {
             case TokenType.Comment => return this.parseComment()
             case TokenType.SectionInverse => return this.parseSection(true)
             case TokenType.SectionStart => return this.parseSection(false)
-            case TokenType.Partial => return this.parseSection(false)
+            case TokenType.Partial => return this.parsePartial()
             case _ => throw ParserException(token, "unreachable code ${token}")
         }
     }
@@ -205,7 +205,7 @@ class Parser {
             throw ParserException(t, "unexpected token ${t}")
         }
         let next = this.read()
-        if (t.typ != TokenType.RightDelim) {
+        if (next.typ != TokenType.RightDelim) {
             throw ParserException(t, "unexpected token ${t}")
         }
         return PartialNode(t.val)
