@@ -1,7 +1,7 @@
 package mustache
 
 import std.collection.{ArrayList, HashMap, HashSet}
-import serialization.serialization.*
+public import serialization.serialization.*
 
 extend Int8 <: MustacheSerializable{}
 extend Int16 <: MustacheSerializable{}

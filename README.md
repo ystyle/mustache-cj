@@ -2,20 +2,31 @@
 基于仓颉实现的mustache模板引擎
 
 # 安装
->分支说明: master版本因为extend扩展的bug，现在还无法使用。 custome-interface版本现在是用自定义序列化接口extend的，可以正常使用, 不支持模板的方法调用。 reflect版本因为反射无法调用Collection<T>相关接口，而无法使用，仓颉可能会改反射，先留着。 
+>分支说明: master版本使用序列化来实现模板渲染的变量查找, 现在可以正常使用, 不支持模板的方法调用(mustache lambda), 无参调用可以在实现序列化接口时多添加字段并存放方法调用结果来实现。  
+>reflect版本因为反射无法调用Collection<T>相关接口，而无法使用，仓颉可能会改反射，先留着。 
+
 ```toml
 [dependencies]
-mustache = {git = "https://github.com/ystyle/mustache-cj", branch = "custome-interface"}
+mustache = {git = "https://github.com/ystyle/mustache-cj", branch = "master"}
 ```
+
 ### 使用
 如果是自定义类型的话需要实现`MustacheSerializable`接口, 自带的类型已经用扩展功能实现过了。
+
+`MustacheSerializable`接口
+```cj
+public interface MustacheSerializable {
+    func serialize(): DataModel
+}
+```
+
 
 自定义类型示例: 
 ```cj
 import mustache.*
 class MyData <: MustacheSerializable {
     MyData(let string: String) {}
-    public func toDataModel(): DataModel {
+    public func serialize(): DataModel {
         return DataModelStruct().add(field<String>("string", string))
     }
 }
@@ -46,7 +57,7 @@ import serialization.serialization.*
 
 class TestData <: MustacheSerializable {
     TestData(let integer: Int64, let string: String, let boolean: Bool, let map: HashMap<String, String>, let list:Array<Int64>) {}
-    public func toDataModel(): DataModel {
+    public func serialize(): DataModel {
         return DataModelStruct()
             .add(field<Int64>("integer", integer))
             .add(field<String>("string", string))
