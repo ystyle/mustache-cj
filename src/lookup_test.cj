@@ -5,17 +5,17 @@ import std.unittest.testmacro.*
 import serialization.serialization.*
 import std.collection.{HashMap, ArrayList}
 
-struct LookupTestItem<T> where T <: MustacheSerializable {
+struct LookupTestItem<T> where T <: MustacheComponent {
     LookupTestItem(let context: T, let assertions: Array<LookupTestAssertion<T>>) {}
 }
 
-struct LookupTestAssertion<T> where T <: MustacheSerializable {
+struct LookupTestAssertion<T> where T <: MustacheComponent {
     LookupTestAssertion(let name: String, let value: T, let truth: Bool) {}
 }
 
-class TestLookupClass <: MustacheSerializable {
+class TestLookupClass <: MustacheComponent {
     TestLookupClass(let integer: Int64, let string: String, let boolean: Bool, let map: HashMap<String, String>) {}
-    public func serialize(): DataModel {
+    public func mustache(): DataModel {
         return DataModelStruct()
             .add(field<Int64>("integer", integer))
             .add(field<String>("string", string))
@@ -24,8 +24,8 @@ class TestLookupClass <: MustacheSerializable {
     }
 }
 
-let lookupTests = ArrayList<LookupTestItem<MustacheSerializable>>(
-    LookupTestItem<MustacheSerializable>(
+let lookupTests = ArrayList<LookupTestItem<MustacheComponent>>(
+    LookupTestItem<MustacheComponent>(
         TestLookupClass(123, "abc", true, HashMap<String, String>(("in", "I'm nested!"))),
         [
             LookupTestAssertion("integer", 123, true),
@@ -56,7 +56,7 @@ class LookupTest {
                 let a = lookup(assertion.name, toDataModel(test.context))
                 let a1 = a.getOrThrow()
                 let v1 = dmToString(a1)
-                let v2 = dmToString(assertion.value.serialize())
+                let v2 = dmToString(assertion.value.mustache())
                 println("${i}/${j} Unexpected value ${v1} != ${v2}")
                 if (v1 != v2) {
                     @Fail("${i}/${j} Unexpected value ${v1} != ${v2}")

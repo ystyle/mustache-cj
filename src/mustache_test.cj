@@ -36,9 +36,9 @@ class TemplateTest {
 }
 
 @Derive[ToString]
-class FalsyTemplateData <: MustacheSerializable {
+class FalsyTemplateData <: MustacheComponent {
     FalsyTemplateData(let foo:Int64, let bar:Bool){}
-    public func serialize(): DataModel {
+    public func mustache(): DataModel {
         return DataModelStruct().add(field<Int64>("foo", foo)).add(field<Bool>("bar", bar))
     }
 }

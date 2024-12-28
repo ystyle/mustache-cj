@@ -9,8 +9,8 @@ interface Node <: ToString {
     func render(t: Template, w: Writer, c: Array<DataModel>): Unit
 }
 
-public interface MustacheSerializable {
-    func serialize(): DataModel
+public interface MustacheComponent {
+    func mustache(): DataModel
 }
 
 public class MustacheException <: Exception {
@@ -42,7 +42,7 @@ class VarNode <: Node & ToString {
         let v = lookup(this.name, c)
         if (let Some(dm) <- v) {
             let text = dmToString(dm)
-            if (this.escape) {
+            if (t.escape && this.escape) {
                 w.write(escapeFn(text).toArray())
             } else {
                 w.write(text.toArray())
@@ -72,8 +72,9 @@ class SectionNode <: Node & ToString {
             }
         }
         let v = lookup(this.name, c)
-        if (let Some(dm) <- v) {
-            if (this.inverted) {
+        let truthv = truth(v)
+        if (truthv != this.inverted) {
+            if (let Some(dm) <- v) {
                 match (dm) {
                     case vv: DataModelSeq =>
                         if (vv.getItems().size > 0) {
@@ -81,7 +82,7 @@ class SectionNode <: Node & ToString {
                                 elemFn(item)
                             }
                         } else {
-                            elemFn(dm)
+                            elemFn()
                         }
                     case _ => elemFn(dm)
                 }
@@ -90,7 +91,8 @@ class SectionNode <: Node & ToString {
             }
         }
         w.tag()
-        throw MustacheException("failed to lookup ${name}")
+        // todo: 列表后如果有inverted section会被忽略
+        // throw MustacheException("failed to lookup ${name}")
     }
     public func toString(): String {
         return "[section: ${name} inv: ${inverted} elems: ${elems}]"
@@ -158,6 +160,12 @@ public let silentMiss: () -> OptionFn = {
     }
 }
 
+public let disableEscape: () -> OptionFn = {
+    => return {
+        t => t.escape = false
+    }
+}
+
 public class Template {
     protected let name: String
     let elems = ArrayList<Node>()
@@ -165,6 +173,7 @@ public class Template {
     protected var startDelim = "{{"
     protected var endDelim = "}}"
     protected var silentMiss = true
+    var escape = true
     public init() {
         this.name = ""
     }
@@ -201,25 +210,23 @@ public class Template {
             } catch (e: Exception) {
                 if (!this.silentMiss) {
                     throw e
-                } else {
-                    e.printStackTrace()
                 }
             }
         }
         w.flush()
     }
 
-    public func render<T>(w: OutputStream, context: Array<T>): Unit where T <: MustacheSerializable {
+    public func render<T>(w: OutputStream, context: Array<T>): Unit where T <: MustacheComponent {
         this.render(Writer(w), toDataModel(context))
     }
 
-    public func render<T>(context: Array<T>): String where T <: MustacheSerializable {
+    public func render<T>(context: Array<T>): String where T <: MustacheComponent {
         var buf = ByteBuffer()
         let w = Writer(buf)
         this.render(w, toDataModel(context))
         return String.fromUtf8(buf.bytes())
     }
-    public func renderBytes<T>(context: Array<T>): Array<Byte> where T <: MustacheSerializable {
+    public func renderBytes<T>(context: Array<T>): Array<Byte> where T <: MustacheComponent {
         var buf = ByteBuffer()
         let w = Writer(buf)
         this.render(w, toDataModel(context))
@@ -235,6 +242,14 @@ func dmToString(data: DataModel): String {
         case v: DataModelNull => ""
         case v: ToString => v.toString()
         case _ => data.toJson().toJsonString()
+    }
+}
+func truth(data: ?DataModel): Bool {
+    match (data) {
+        case None => false
+        case Some(v: DataModelNull) => false
+        case Some(v:DataModelSeq) => v.getItems().size > 0
+        case _ => true
     }
 }
 
@@ -256,10 +271,10 @@ func escapeFn(s: String): String {
     return b.toString()
 }
 
-func toDataModel<T>(context: Array<T>): Array<DataModel> where T <: MustacheSerializable {
+func toDataModel<T>(context: Array<T>): Array<DataModel> where T <: MustacheComponent {
     let list = ArrayList<DataModel>(context.size)
     for (ctx in context) {
-        list.append(ctx.serialize())
+        list.append(ctx.mustache())
     }
     return list.toArray()
 }
