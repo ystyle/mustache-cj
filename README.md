@@ -9,6 +9,10 @@
 [dependencies]
 mustache = {git = "https://github.com/ystyle/mustache-cj", branch = "master"}
 ```
+ ## 版本适配分支
+ >master版本一般为最新的内测分支， 分支名对应仓颉历史版本
+
+
 ### 功能
 > 没有实现[`mustache(5)`](https://mustache.github.io/mustache.5.html)的所有功能, 已实现的主要功能如下
 
