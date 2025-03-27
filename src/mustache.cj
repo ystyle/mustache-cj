@@ -64,8 +64,8 @@ class SectionNode <: Node & ToString {
         let elemFn = {
             v: Array<DataModel> =>
             let l = ArrayList<DataModel>()
-            l.appendAll(v)
-            l.appendAll(c)
+            l.add(all:v)
+            l.add(all:c)
             let ctx = l.toArray()
             for (elem in elems) {
                 elem.render(t, w, ctx)
@@ -196,7 +196,7 @@ public class Template {
         let parser = Parser(lex)
         let elems = parser.parse()
         this.elems.clear()
-        this.elems.appendAll(elems)
+        this.elems.add(all:elems)
     }
 
     public func parse(bs: Array<Byte>): Unit {
@@ -248,7 +248,11 @@ func truth(data: ?DataModel): Bool {
     match (data) {
         case None => false
         case Some(v: DataModelNull) => false
-        case Some(v:DataModelSeq) => v.getItems().size > 0
+        case Some(v: DataModelInt) => v.getValue() != 0
+        case Some(v: DataModelFloat) => v.getValue() != 0.0
+        case Some(v: DataModelString) => v.getValue() != ""
+        case Some(v: DataModelBool) => v.getValue()
+        case Some(v: DataModelSeq) => v.getItems().size > 0
         case _ => true
     }
 }
@@ -274,7 +278,7 @@ func escapeFn(s: String): String {
 func toDataModel<T>(context: Array<T>): Array<DataModel> where T <: MustacheComponent {
     let list = ArrayList<DataModel>(context.size)
     for (ctx in context) {
-        list.append(ctx.mustache())
+        list.add(ctx.mustache())
     }
     return list.toArray()
 }

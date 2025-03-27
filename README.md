@@ -12,7 +12,8 @@ mustache = {git = "https://github.com/ystyle/mustache-cj", branch = "master"}
 ## 版本适配分支
  >master版本一般为最新的内测分支， 分支名对应仓颉历史版本
 
-- master: 当前适配0.58.3
+- master: 当前适配0.59.4
+- 0.58.3
 - 0.57.3
 
 

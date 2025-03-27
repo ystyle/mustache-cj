@@ -8,9 +8,8 @@ class LexerTestItem {
     LexerTestItem(let template: String, let expected: Array<Token>) {}
 }
 
-var lexerTests = ArrayList<LexerTestItem>(
-    LexerTestItem(
-        "foo {{{bar}}}\nbaz {{! this is ignored }}",
+var lexerTests = ArrayList<LexerTestItem>([
+    LexerTestItem("foo {{{bar}}}\nbaz {{! this is ignored }}",
         Token(TokenType.Text, "foo ", 0, 0),
         Token(TokenType.LeftDelim, "{{", 0, 0),
         Token(TokenType.RawStart, "{", 0, 0),
@@ -43,8 +42,8 @@ var lexerTests = ArrayList<LexerTestItem>(
         Token(TokenType.Identifier, "bar", 0, 0),
         Token(TokenType.RightDelim, "}}", 0, 0),
         Token(TokenType.EOF, "", 0, 0)
-    ),
-)
+    )
+])
 
 @Test
 class LexerTest {

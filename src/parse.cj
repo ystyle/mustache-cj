@@ -19,8 +19,8 @@ class Parser {
         this.lexer = lex
     }
     init(b: ArrayList<Token>) {
-        this.buf.appendAll(b)
-        this.buf.append(Token(TokenType.EOF, "", 0, 0))
+        this.buf.add(all:b)
+        this.buf.add(Token(TokenType.EOF, "", 0, 0))
     }
     func read(): Token {
         if (this.buf.size > 0) {
@@ -36,7 +36,7 @@ class Parser {
         let tokens = ArrayList<Token>(n)
         while (true) {
             let token = this.read()
-            tokens.append(token)
+            tokens.add(token)
             if (token.typ == TokenType.EOF) {
                 break
             }
@@ -51,7 +51,7 @@ class Parser {
         let tokens = ArrayList<Token>()
         while (true) {
             let token = this.read()
-            tokens.append(token)
+            tokens.add(token)
             if (token.typ == TokenType.EOF) {
                 throw ParserException("token ${t} not found")
             }
@@ -66,7 +66,7 @@ class Parser {
         let tokens = ArrayList<Token>()
         while (true) {
             let read = this.readt(t.typ)
-            tokens.appendAll(read)
+            tokens.add(all:read)
             if (read.size > 0 && read[read.size - 1].val == t.val) {
                 break
             }
@@ -80,7 +80,7 @@ class Parser {
         }
         let t = this.lexer?.token()
         let tt = t.getOrThrow()
-        this.buf.append(tt)
+        this.buf.add(tt)
         return tt
     }
 
@@ -92,7 +92,7 @@ class Parser {
         while (i < n) {
             let t = this.lexer?.token()
             let tt = t.getOrThrow()
-            this.buf.append(tt)
+            this.buf.add(tt)
             if (tt.typ == TokenType.EOF) {
                 return this.buf
             }
@@ -107,14 +107,14 @@ class Parser {
             match (token.typ) {
                 case TokenType.EOF => break
                 case TokenType.Error => throw ParserException(token, token.val)
-                case TokenType.Text => nodes.append(TextNode(token.val))
+                case TokenType.Text => nodes.add(TextNode(token.val))
                 case TokenType.LeftDelim =>
                     let node = this.parseTag()
-                    nodes.append(node)
+                    nodes.add(node)
                 case TokenType.RawStart =>
                     let node = this.parseRawTag()
-                    nodes.append(node)
-                case TokenType.SetDelim => nodes.append(DelimNode())
+                    nodes.add(node)
+                case TokenType.SetDelim => nodes.add(DelimNode())
                 case _ => ()
             }
         }
@@ -183,7 +183,7 @@ class Parser {
         var stack = 1
         while (true) {
             let read = this.readv(t)
-            tokens.appendAll(read)
+            tokens.add(all:read)
             if (read.size > 1) {
                 let tt = read[read.size - 2]
                 match (tt.typ) {

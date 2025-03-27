@@ -9,40 +9,46 @@ class ParserTestItem {
 }
 
 var parserTests = ArrayList<ParserTestItem>(
-    ParserTestItem(
-        "{{#foo}}\n\t{{#foo}}hello nested{{/foo}}{{/foo}}",
-        SectionNode(
-            "foo",
-            false,
-            ArrayList<Node>(
-                TextNode("\n\t"),
-                SectionNode("foo", false, ArrayList<Node>(TextNode("hello nested")))
-            )
+    [
+        ParserTestItem(
+            "{{#foo}}\n\t{{#foo}}hello nested{{/foo}}{{/foo}}",
+            SectionNode(
+                "foo",
+                false,
+                ArrayList<Node>([TextNode("\n\t"), SectionNode("foo", false, ArrayList<Node>([TextNode("hello nested")])
+                )])
+            ),
         ),
-    ),
-    ParserTestItem(
-        "\nfoo {{bar}} {{#alex}}\r\n\tbaz\n{{/alex}} {{!foo}}",
-        TextNode("\nfoo "),
-        VarNode("bar", true),
-        TextNode(" "),
-        SectionNode("alex", false, ArrayList<Node>(TextNode("\r\n\tbaz\n"),)),
-        TextNode(" "),
-        CommentNode("foo")
-    ),
-    ParserTestItem(
-        "this will{{^foo}}not{{/foo}} be rendered",
-        TextNode("this will"),
-        SectionNode("foo", true, ArrayList<Node>(TextNode("not"))),
-        TextNode(" be rendered"),
-    ),
-    ParserTestItem(
-        "{{#list}}({{.}}){{/list}}",
-        SectionNode("list", false, ArrayList<Node>(
-            TextNode("("),
-            VarNode(".", true),
-            TextNode(")"),
-        )),
-    )
+        ParserTestItem(
+            "\nfoo {{bar}} {{#alex}}\r\n\tbaz\n{{/alex}} {{!foo}}",
+            TextNode("\nfoo "),
+            VarNode("bar", true),
+            TextNode(" "),
+            SectionNode("alex", false, ArrayList<Node>([TextNode("\r\n\tbaz\n")])),
+            TextNode(" "),
+            CommentNode("foo")
+        ),
+        ParserTestItem(
+            "this will{{^foo}}not{{/foo}} be rendered",
+            TextNode("this will"),
+            SectionNode("foo", true, ArrayList<Node>([TextNode("not")])),
+            TextNode(" be rendered"),
+        ),
+        ParserTestItem(
+            "{{#list}}({{.}}){{/list}}",
+            SectionNode(
+                "list",
+                false,
+                ArrayList<Node>(
+                    [
+                        TextNode("("),
+                        VarNode(".", true),
+                        TextNode(")")
+                    ]
+                )
+            ),
+        )
+    ]
 )
 
 @Test

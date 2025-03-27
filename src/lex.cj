@@ -75,7 +75,7 @@ class Lexer  <: ToString {
         this.pos -= 1
     }
     func emit(t: TokenType):Unit {
-       this.tokens.append(Token(t, String(this.runes[this.start..this.pos]), this.lineNum(), this.columnNum()))
+       this.tokens.addLast(Token(t, String(this.runes[this.start..this.pos]), this.lineNum(), this.columnNum()))
        this.start = this.pos
     }
     func ignore():Unit {
@@ -92,13 +92,13 @@ class Lexer  <: ToString {
         return this.runes[..this.pos].size
     }
     func errorf(format:String): ?State {
-        this.tokens.append(Token(TokenType.Error, format, this.lineNum(), this.columnNum()))
+        this.tokens.addLast(Token(TokenType.Error, format, this.lineNum(), this.columnNum()))
         return None
     }
     func token(): Token {
         var t:?Token = None
         while (true) {
-            if (let Some(v) <- this.tokens.popFirst()) {
+            if (let Some(v) <- this.tokens.removeFirst()) {
                 t = v
                 break
             }

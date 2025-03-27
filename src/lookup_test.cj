@@ -24,7 +24,7 @@ class TestLookupClass <: MustacheComponent {
     }
 }
 
-let lookupTests = ArrayList<LookupTestItem<MustacheComponent>>(
+let lookupTests = ArrayList<LookupTestItem<MustacheComponent>>([
     LookupTestItem<MustacheComponent>(
         TestLookupClass(123, "abc", true, HashMap<String, String>(("in", "I'm nested!"))),
         [
@@ -33,8 +33,8 @@ let lookupTests = ArrayList<LookupTestItem<MustacheComponent>>(
             LookupTestAssertion("boolean", true, true),
             LookupTestAssertion("map.in", "I'm nested!", true)
         ]
-    ),
-)
+    )
+])
 
 @Tag[lookup]
 @Test

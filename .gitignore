@@ -1,4 +1,5 @@
 .cache
 .vscode
+.idea
 target
 *.cj.macrocall
