@@ -9,10 +9,19 @@
 [dependencies]
 mustache = {git = "https://github.com/ystyle/mustache-cj", branch = "master"}
 ```
+本分支适配仓颉1.0.0版本， 需要添加`stdx`依赖的环境变量 
+```shell
+# 需要换成自己的位置
+export CANGJIE_STDX_PATH=${HOME}/.config/cjvs/stdx/1.0.0/linux_x86_64_llvm/dynamic/stdx
+export LD_LIBRARY_PATH=$CANGJIE_STDX_PATH:$LD_LIBRARY_PATH
+
+```
+
 ## 版本适配分支
  >master版本一般为最新的内测分支， 分支名对应仓颉历史版本
 
-- master: 当前适配0.59.4
+- master: 当前适配1.0.0
+- 0.59.4
 - 0.58.3
 - 0.57.3
 
@@ -86,7 +95,7 @@ import serialization.serialization.*
 
 class TestData <: MustacheComponent {
     TestData(let integer: Int64, let string: String, let boolean: Bool, let map: HashMap<String, String>, let list:Array<Int64>) {}
-    public func serialize(): DataModel {
+    public func mustache(): DataModel {
         return DataModelStruct()
             .add(field<Int64>("integer", integer))
             .add(field<String>("string", string))

@@ -2,8 +2,8 @@ package mustache
 
 import std.unittest.*
 import std.unittest.testmacro.*
-import serialization.serialization.*
 import std.collection.{HashMap, ArrayList}
+import stdx.serialization.serialization.*
 
 struct LookupTestItem<T> where T <: MustacheComponent {
     LookupTestItem(let context: T, let assertions: Array<LookupTestAssertion<T>>) {}

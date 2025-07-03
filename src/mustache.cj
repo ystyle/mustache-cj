@@ -1,9 +1,9 @@
 package mustache
 
 import std.collection.{ArrayList, HashMap}
-import serialization.serialization.*
 import std.io.{InputStream, StringReader, OutputStream, ByteBuffer, StringWriter}
-import encoding.json.*
+import stdx.serialization.serialization.*
+import stdx.encoding.json.*
 
 interface Node <: ToString {
     func render(t: Template, w: Writer, c: Array<DataModel>): Unit

@@ -3,8 +3,8 @@ package mustache
 import std.unittest.*
 import std.unittest.testmacro.*
 import std.collection.HashMap
-import serialization.serialization.*
 import std.deriving.Derive
+import stdx.serialization.serialization.*
 
 @Test
 class TemplateTest {

@@ -1,7 +1,7 @@
 package mustache
 
 import std.collection.{ArrayList, HashMap, HashSet}
-public import serialization.serialization.*
+public import stdx.serialization.serialization.*
 
 extend Int8 <: MustacheComponent{
     public func mustache(): DataModel {

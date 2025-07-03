@@ -1,6 +1,6 @@
 package mustache
 
-import serialization.serialization.*
+import stdx.serialization.serialization.*
 import std.collection.{HashMap, ArrayList}
 
 
